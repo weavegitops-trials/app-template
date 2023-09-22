@@ -47,6 +47,7 @@ spec:
       labels:
         app: backend
     spec:
+      serviceAccountName: backend
       containers:
       - command:
         - ./podinfo
@@ -120,3 +121,11 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: backend
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backend
+  namespace: dev
+  labels:
+    account: backend
