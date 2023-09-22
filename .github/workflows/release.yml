@@ -15,7 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: sigstore/cosign-installer@v3
       - uses: fluxcd/flux2/action@main
       - name: Setup Go
         uses: actions/setup-go@v3
@@ -71,11 +70,6 @@ jobs:
           platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-      - name: Publish Helm chart to GHCR
-        run: |
-          helm package charts/podinfo
-          helm push podinfo-${{ steps.prep.outputs.VERSION }}.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
-          rm podinfo-${{ steps.prep.outputs.VERSION }}.tgz
       - name: Publish Flux OCI artifact to GHCR
         run: |
           flux push artifact oci://ghcr.io/${{ github.repository_owner }}/manifests/podinfo:${{ steps.prep.outputs.VERSION }} \
@@ -83,14 +77,3 @@ jobs:
             --source="${{ github.event.repository.html_url }}" \
             --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
           flux tag artifact oci://ghcr.io/${{ github.repository_owner }}/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --tag latest
-      - name: Publish helm chart
-        uses: stefanprodan/helm-gh-pages@master
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish config artifact
-        run: |
-          flux push artifact oci://ghcr.io/${{ github.repository_owner }}/podinfo-deploy:${{ steps.prep.outputs.VERSION }} \
-            --path="./kustomize" \
-            --source="${{ github.event.repository.html_url }}" \
-            --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
-          flux tag artifact oci://ghcr.io/${{ github.repository_owner }}/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --tag latest
