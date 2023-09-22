@@ -36,7 +36,7 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
+          username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Prepare
         id: prep
@@ -53,7 +53,7 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
-            ghcr.io/${{ github.actor }}/podinfo
+            ghcr.io/${{ github.repository_owner }}/podinfo
           tags: |
             type=raw,value=${{ steps.prep.outputs.VERSION }}
             type=raw,value=latest
@@ -74,23 +74,23 @@ jobs:
       - name: Publish Helm chart to GHCR
         run: |
           helm package charts/podinfo
-          helm push podinfo-${{ steps.prep.outputs.VERSION }}.tgz oci://ghcr.io/${{ github.actor }}/charts
+          helm push podinfo-${{ steps.prep.outputs.VERSION }}.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
           rm podinfo-${{ steps.prep.outputs.VERSION }}.tgz
       - name: Publish Flux OCI artifact to GHCR
         run: |
-          flux push artifact oci://ghcr.io/${{ github.actor }}/manifests/podinfo:${{ steps.prep.outputs.VERSION }} \
+          flux push artifact oci://ghcr.io/${{ github.repository_owner }}/manifests/podinfo:${{ steps.prep.outputs.VERSION }} \
             --path="./kustomize" \
             --source="${{ github.event.repository.html_url }}" \
             --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
-          flux tag artifact oci://ghcr.io/${{ github.actor }}/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --tag latest
+          flux tag artifact oci://ghcr.io/${{ github.repository_owner }}/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --tag latest
       - name: Publish helm chart
         uses: stefanprodan/helm-gh-pages@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish config artifact
         run: |
-          flux push artifact oci://ghcr.io/${{ github.actor }}/podinfo-deploy:${{ steps.prep.outputs.VERSION }} \
+          flux push artifact oci://ghcr.io/${{ github.repository_owner }}/podinfo-deploy:${{ steps.prep.outputs.VERSION }} \
             --path="./kustomize" \
             --source="${{ github.event.repository.html_url }}" \
             --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
-          flux tag artifact oci://ghcr.io/${{ github.actor }}/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --tag latest
+          flux tag artifact oci://ghcr.io/${{ github.repository_owner }}/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --tag latest
