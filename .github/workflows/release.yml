@@ -83,13 +83,6 @@ jobs:
             --source="${{ github.event.repository.html_url }}" \
             --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
           flux tag artifact oci://ghcr.io/${{ github.actor }}/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --tag latest
-      - name: Sign OCI artifacts
-        env:
-          COSIGN_EXPERIMENTAL: 1
-        run: |
-          cosign sign ghcr.io/${{ github.actor }}/podinfo:${{ steps.prep.outputs.VERSION }} --yes
-          cosign sign ghcr.io/${{ github.actor }}/charts/podinfo:${{ steps.prep.outputs.VERSION }} --yes
-          cosign sign ghcr.io/${{ github.actor }}/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --yes
       - name: Publish helm chart
         uses: stefanprodan/helm-gh-pages@master
         with:
@@ -101,11 +94,3 @@ jobs:
             --source="${{ github.event.repository.html_url }}" \
             --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
           flux tag artifact oci://ghcr.io/${{ github.actor }}/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --tag latest
-      - name: Sign config artifact
-        run: |
-          echo "$COSIGN_KEY" > /tmp/cosign.key
-          cosign sign -key /tmp/cosign.key ghcr.io/${{ github.actor }}/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --yes
-          cosign sign -key /tmp/cosign.key ghcr.io/${{ github.actor }}/podinfo-deploy:latest --yes
-        env:
-          COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
-          COSIGN_KEY: ${{secrets.COSIGN_KEY}}
