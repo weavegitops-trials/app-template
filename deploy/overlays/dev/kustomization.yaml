@@ -3,8 +3,8 @@ kind: Kustomization
 namespace: dev
 resources:
   - ../../bases/backend
-  - ../../bases/frontend
-  - ../../bases/cache
-  - namespace.yaml
+  # - ../../bases/frontend
+  # - ../../bases/cache
+  # - namespace.yaml
 transformers:
   - labels.yaml
