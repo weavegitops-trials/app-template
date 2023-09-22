@@ -37,12 +37,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.GHCR_TOKEN }}
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Prepare
         id: prep
         run: |
@@ -58,8 +53,7 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
-            docker.io/stefanprodan/podinfo
-            ghcr.io/stefanprodan/podinfo
+            ghcr.io/${{ github.actor }}/podinfo
           tags: |
             type=raw,value=${{ steps.prep.outputs.VERSION }}
             type=raw,value=latest
@@ -80,48 +74,38 @@ jobs:
       - name: Publish Helm chart to GHCR
         run: |
           helm package charts/podinfo
-          helm push podinfo-${{ steps.prep.outputs.VERSION }}.tgz oci://ghcr.io/stefanprodan/charts
+          helm push podinfo-${{ steps.prep.outputs.VERSION }}.tgz oci://ghcr.io/${{ github.actor }}/charts
           rm podinfo-${{ steps.prep.outputs.VERSION }}.tgz
       - name: Publish Flux OCI artifact to GHCR
         run: |
-          flux push artifact oci://ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} \
+          flux push artifact oci://ghcr.io/${{ github.actor }}/manifests/podinfo:${{ steps.prep.outputs.VERSION }} \
             --path="./kustomize" \
             --source="${{ github.event.repository.html_url }}" \
             --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
-          flux tag artifact oci://ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --tag latest
+          flux tag artifact oci://ghcr.io/${{ github.actor }}/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --tag latest
       - name: Sign OCI artifacts
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign sign docker.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }} --yes
-          cosign sign ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }} --yes
-          cosign sign ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }} --yes
-          cosign sign ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --yes
-      - name: Publish base image
-        uses: docker/build-push-action@v3
-        with:
-          push: true
-          builder: ${{ steps.buildx.outputs.name }}
-          context: .
-          platforms: linux/amd64
-          file: ./Dockerfile.base
-          tags: docker.io/stefanprodan/podinfo-base:latest
+          cosign sign ghcr.io/${{ github.actor }}/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+          cosign sign ghcr.io/${{ github.actor }}/charts/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+          cosign sign ghcr.io/${{ github.actor }}/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --yes
       - name: Publish helm chart
         uses: stefanprodan/helm-gh-pages@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish config artifact
         run: |
-          flux push artifact oci://ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} \
+          flux push artifact oci://ghcr.io/${{ github.actor }}/podinfo-deploy:${{ steps.prep.outputs.VERSION }} \
             --path="./kustomize" \
             --source="${{ github.event.repository.html_url }}" \
             --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
-          flux tag artifact oci://ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --tag latest
+          flux tag artifact oci://ghcr.io/${{ github.actor }}/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --tag latest
       - name: Sign config artifact
         run: |
           echo "$COSIGN_KEY" > /tmp/cosign.key
-          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --yes
-          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:latest --yes
+          cosign sign -key /tmp/cosign.key ghcr.io/${{ github.actor }}/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --yes
+          cosign sign -key /tmp/cosign.key ghcr.io/${{ github.actor }}/podinfo-deploy:latest --yes
         env:
           COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
           COSIGN_KEY: ${{secrets.COSIGN_KEY}}
