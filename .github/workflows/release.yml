@@ -47,6 +47,13 @@ jobs:
           echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
           echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
           echo "REVISION=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+      - name: Publish Flux OCI artifact to GHCR
+        run: |
+          flux push artifact oci://ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/manifests:${{ steps.prep.outputs.VERSION }} \
+            --path="./kustomize" \
+            --source="${{ github.event.repository.html_url }}" \
+            --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
+          flux tag artifact oci://ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/manifests:${{ steps.prep.outputs.VERSION }} --tag latest
       - name: Generate images meta
         id: meta
         uses: docker/metadata-action@v4
@@ -70,10 +77,3 @@ jobs:
           platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-      - name: Publish Flux OCI artifact to GHCR
-        run: |
-          flux push artifact oci://ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/manifests:${{ steps.prep.outputs.VERSION }} \
-            --path="./kustomize" \
-            --source="${{ github.event.repository.html_url }}" \
-            --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
-          flux tag artifact oci://ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/manifests:${{ steps.prep.outputs.VERSION }} --tag latest
